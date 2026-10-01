@@ -31,3 +31,28 @@ test('returns general guidance when no optional AI key is configured', () => {
     if (previousKey !== undefined) process.env.OPENAI_API_KEY = previousKey;
   }
 });
+
+test('gives distinct, relevant local guidance for different common questions', () => {
+  const previousKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  try {
+    const questions = [
+      ['I have a headache', /headache|screens/i],
+      ['I have stomach pain', /stomach|simple foods/i],
+      ['I have a fever', /fever|temperature/i],
+      ['What are symptoms of dehydration?', /dehydration|dark urine/i],
+      ['I have a cough', /cough|warm drinks/i],
+    ];
+    const answers = questions.map(([question, relevantContent]) => {
+      const result = assessQuestion(question, 'en');
+      assert.equal(result.emergency, false);
+      assert.equal(result.source, 'local');
+      assert.match(result.answer, relevantContent);
+      return result.answer;
+    });
+
+    assert.equal(new Set(answers).size, questions.length);
+  } finally {
+    if (previousKey !== undefined) process.env.OPENAI_API_KEY = previousKey;
+  }
+});
